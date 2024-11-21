@@ -1,0 +1,177 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posts CRUD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input, textarea {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+        button {
+            background: #333;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background: #444;
+            }
+
+        #postsList {
+            margin-top: 20px;
+        }
+
+        .post {
+            background: #f4f4f4;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+
+            .post button {
+                margin-right: 5px;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Posts CRUD</h1>
+        <form id="postForm">
+            <input type="hidden" id="postId">
+            <input type="text" id="title" placeholder="Title" required>
+            <textarea id="content" placeholder="Content" required></textarea>
+            <input type="text" id="authorName" placeholder="Author Name" required>
+            <input type="text" id="communityName" placeholder="Community Name" required>
+            <button type="submit">Submit</button>
+        </form>
+        <div id="postsList"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://localhost:7280/api/Posts1';
+        const postForm = document.getElementById('postForm');
+        const postsList = document.getElementById('postsList');
+
+        // Fetch all posts
+        async function fetchPosts() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Failed to fetch posts');
+                const posts = await response.json();
+                displayPosts(posts);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Display posts
+        function displayPosts(posts) {
+            postsList.innerHTML = '';
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post';
+                postElement.innerHTML = `
+                        <h3>${post.title}</h3>
+                        <p>${post.content}</p>
+                        <p>Author: ${post.authorName}</p>
+                        <p>Community: ${post.communityName}</p>
+                        <button onclick="editPost(${post.id})">Edit</button>
+                        <button onclick="deletePost(${post.id})">Delete</button>
+                    `;
+                postsList.appendChild(postElement);
+            });
+        }
+
+        // Handle form submission (create/update post)
+        postForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const postId = document.getElementById('postId').value;
+            const post = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value,
+                authorName: document.getElementById('authorName').value,
+                communityName: document.getElementById('communityName').value
+            };
+
+            try {
+                const url = API_URL;
+                const method = 'POST';
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(post)
+                });
+                if (!response.ok) throw new Error('Failed to submit post');
+                postForm.reset();
+                document.getElementById('postId').value = '';
+                fetchPosts();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Edit post
+        async function editPost(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                if (!response.ok) throw new Error('Failed to fetch post');
+                const post = await response.json();
+                document.getElementById('postId').value = post.id;
+                document.getElementById('title').value = post.title;
+                document.getElementById('content').value = post.content;
+                document.getElementById('authorName').value = post.authorName;
+                document.getElementById('communityName').value = post.communityName;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Delete post
+        async function deletePost(id) {
+            if (confirm('Are you sure you want to delete this post?')) {
+                try {
+                    const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error('Failed to delete post');
+                    fetchPosts();
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        // Initial fetch of posts
+        fetchPosts();
+    </script>
+</body>
+</html>
